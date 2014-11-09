@@ -1,0 +1,23 @@
+{
+    "name": "orbithttp/orbit",
+    "type": "library",
+    "description": "Simple object oriented cURL wrapper. Has many useful things.",
+    "keywords": ["curl","http", "http client"],
+    "homepage": "https://github.com/chtulhu1/OrbitHttp",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Max Yudkin",
+            "email": "max.judkin@yandex.ru",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0"
+    },
+    "autoload": {
+        "psr-0": {
+            "Orbit": "src"
+        }
+    }
+}
