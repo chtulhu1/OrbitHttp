@@ -3,11 +3,9 @@ namespace OrbitHttp;
 
 class Client
 {
-    private static $instance;
-
     private $cookies;
-
-    private $curl_options = array(
+    private $configs;
+    private $default_options = array(
         CURLOPT_AUTOREFERER => true,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HEADER => false,
@@ -17,21 +15,62 @@ class Client
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HTTPHEADER => array()
     );
-
-    private $curl_request_options = array();
-
+    private $one_time_config;
+    private $default_config;
     private $ch;
+    private $response;
 
-    private function __construct(){}
-
-    private function __clone(){}
-
-    public static function open()
+    public function __construct()
     {
-        if (self::$instance === null) {
-            self::$instance = new Client();
+        $this->addConfig('default', new Config());
+        $this->one_time_config = new Config();
+        $this->setCurlOpt($this->default_options);
+    }
+
+    public function addConfig($name, Config $config)
+    {
+        if ($name != '') {
+            $this->configs[$name] = $config;
+            $this->useConfig($name);
         }
-        return self::$instance;
+    }
+
+    public function useConfig($name)
+    {
+        if (isset($this->configs[$name]))
+            $this->default_config = $this->configs[$name];
+    }
+
+    public function setCurlOpt($opt, $value = null)
+    {
+        if (is_array($opt)) {
+            foreach($opt as $k => $v) {
+                $this->default_config->set($k, $v);
+                $this->one_time_config->set($k, $v);
+            }
+        } else {
+            $this->default_config->set($opt, $value);
+            $this->one_time_config->set($opt, $value);
+        }
+    }
+
+    public function response()
+    {
+        return $this->response instanceof Response ? $this->response : null;
+    }
+
+    public function getCurlOpt($key)
+    {
+        return $this->default_config->get($key);
+    }
+
+    public function setCookies($name, $path = null)
+    {
+        if (!$this->cookies instanceof CookieSession) {
+            $this->cookies = new CookieSession($name, $path);
+        } else {
+            $this->cookies->initSession($name, $path);
+        }
     }
 
     public function get($url)
@@ -44,6 +83,8 @@ class Client
         return $this->_request($url, $post_data);
     }
 
+
+
     private function _request($url = null, $post_data = false)
     {
         $this->_initCurl($url);
@@ -52,9 +93,11 @@ class Client
             $this->disableSSLVerify();
         }
 
-        $this->_buildRequestOpts();
-
-        $this->_setCookieFiles();
+        if ($this->cookies instanceof CookieSession) {
+            $cookies_file = $this->cookies->getFile();
+            $this->_setCurlRequestOpt(CURLOPT_COOKIEFILE, $cookies_file);
+            $this->_setCurlRequestOpt(CURLOPT_COOKIEJAR, $cookies_file);
+        }
 
         if ($post_data) {
             $this->_setPostData($post_data);
@@ -70,54 +113,26 @@ class Client
         curl_close($this->ch);
         $this->_resetCurlRequestOpts();
 
-        if ($this->cookies) {
-            CookieSession::open($this->cookies)->saveCookies();
+        if ($this->cookies instanceof CookieSession) {
+            $this->cookies->saveCookies();
         }
 
-        return new Response($content, $info, $error);
-    }
-
-    private function _buildRequestOpts()
-    {
-        foreach ($this->getCurlOpt() as $k => $v) {
-            $this->_setCurlRequestOpt($k, $v);
-        }
-    }
-
-
-    public function setCurlOpt($opt, $value = null)
-    {
-        if (is_array($opt)) {
-            foreach($opt as $k => $v) {
-                $this->curl_options[$k] = $v;
-            }
-        } else {
-            $this->curl_options[$opt] = $value;
-        }
+        return $this->response = new Response($content, $info, $error);
     }
 
     private function _setCurlRequestOpt($opt, $val)
     {
-        $this->curl_request_options[$opt] = $val;
+        $this->one_time_config->set($opt, $val);
     }
 
     private function _getCurlRequestOpts()
     {
-        return $this->curl_request_options;
+        return $this->one_time_config;
     }
 
     private function _resetCurlRequestOpts()
     {
-        $this->curl_request_options = array();
-    }
-
-    public function getCurlOpt($key = null)
-    {
-        if ($key !== null) {
-            return $this->curl_options[$key];
-        } else {
-            return $this->curl_options;
-        }
+        $this->one_time_config->clear();
     }
 
     private function _initCurl($url)
@@ -125,28 +140,10 @@ class Client
         $this->ch = curl_init($url);
     }
 
-    private function _setCookieFiles()
-    {
-        if ($this->cookies) {
-            $cookies = CookieSession::open($this->cookies);
-            $cookies_file = $cookies->getFile();
-            $this->_setCurlRequestOpt(CURLOPT_COOKIEFILE, $cookies_file);
-            $this->_setCurlRequestOpt(CURLOPT_COOKIEJAR, $cookies_file);
-        }
-    }
-
     private function _setPostData($data)
     {
         $this->_setCurlRequestOpt(CURLOPT_POST, true);
         $this->_setCurlRequestOpt(CURLOPT_POSTFIELDS, $data);
-    }
-
-    public function setCookies($name, $path = null)
-    {
-        $this->cookies = $name;
-        if ($name) {
-            CookieSession::open($name, $path);
-        }
     }
 
     // quick methods

@@ -36,7 +36,7 @@ class Response {
         if ($this->dom == null) {
             libxml_use_internal_errors($libxml_errors);
             $doc = new \DOMDocument;
-            if (!$doc->loadHTML(($utf ? '<meta http-equiv="content-type" content="text/html; charset=utf-8">' : '').$this->content)) {
+            if (!$doc->loadHTML(($utf ? '<meta http-equiv="content-type" content="text/html; charset=utf-8">' : '').$this->body())) {
                 throw new \Exception('cannot load dom');
             } else {
                 $this->dom = $doc;
@@ -57,17 +57,17 @@ class Response {
 
     public function json()
     {
-        return json_encode($this->content);
+        return json_encode($this->body());
     }
 
     public function obj()
     {
-        return $this->json ?: $this->json = json_decode($this->content);
+        return $this->json ?: $this->json = json_decode($this->body());
     }
 
     public function iconv($in_cod, $out_cod)
     {
-        return iconv($in_cod, $out_cod, $this->content);
+        return iconv($in_cod, $out_cod, $this->body());
     }
 
     public function utf()
@@ -75,14 +75,14 @@ class Response {
         return $this->iconv('cp1251', 'utf-8');
     }
 
-    public function get()
+    public function body()
     {
         return $this->content;
     }
 
     public function __toString()
     {
-        return $this->get() ?: '';
+        return (string) $this->body();
     }
 
     public function info($key = null)

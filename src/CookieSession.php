@@ -3,32 +3,20 @@ namespace OrbitHttp;
 
 class CookieSession
 {
-    private static $instance;
-
     private $cookies = array();
 
     private $active_cookie = null;
 
-    private function __construct(){}
-
-    private function __clone(){}
+    public function __construct($name, $path = null)
+    {
+        $this->initSession($name, $path);
+    }
 
     public function __destruct()
     {
         if ($this->isTmp()) {
             $this->_deleteFile();
         }
-    }
-
-    public static function open($name, $path = null)
-    {
-        if (self::$instance === null) {
-            self::$instance = new CookieSession();
-        }
-
-        self::$instance->initSession($name, $path);
-
-        return self::$instance;
     }
 
     public function initSession($name, $path = null)
