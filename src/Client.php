@@ -46,11 +46,9 @@ class Client
         if (is_array($opt)) {
             foreach($opt as $k => $v) {
                 $this->default_config->set($k, $v);
-                $this->one_time_config->set($k, $v);
             }
         } else {
             $this->default_config->set($opt, $value);
-            $this->one_time_config->set($opt, $value);
         }
     }
 
@@ -93,6 +91,8 @@ class Client
             $this->disableSSLVerify();
         }
 
+        $this->_buildRequestOptions();
+
         if ($this->cookies instanceof CookieSession) {
             $cookies_file = $this->cookies->getFile();
             $this->_setCurlRequestOpt(CURLOPT_COOKIEFILE, $cookies_file);
@@ -118,6 +118,13 @@ class Client
         }
 
         return $this->response = new Response($content, $info, $error);
+    }
+
+    private function _buildRequestOptions()
+    {
+        foreach ($this->default_config as $k => $v) {
+            $this->_setCurlRequestOpt($k, $v);
+        }
     }
 
     private function _setCurlRequestOpt($opt, $val)
