@@ -8,7 +8,7 @@ class Client
     private $default_options = array(
         CURLOPT_AUTOREFERER => true,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HEADER => false,
+        CURLOPT_HEADER => 1,
         CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 6.2; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0',
         CURLOPT_CONNECTTIMEOUT => 12,
         CURLOPT_TIMEOUT => 12,
@@ -108,6 +108,13 @@ class Client
         }
 
         $content = curl_exec($this->ch);
+        $headers = null;
+        if ($this->getCurlOpt(CURLOPT_HEADER))
+        {
+            $header_size = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE);
+            $headers = substr($content, 0, $header_size);
+            $content = substr($content, $header_size);
+        }
         $info = curl_getinfo($this->ch);
         $error = curl_error($this->ch);
         curl_close($this->ch);
@@ -117,7 +124,7 @@ class Client
             $this->cookies->saveCookies();
         }
 
-        return $this->response = new Response($content, $info, $error);
+        return $this->response = new Response($content, $info, $headers, $error);
     }
 
     private function _buildRequestOptions()

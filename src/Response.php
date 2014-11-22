@@ -3,16 +3,19 @@ namespace OrbitHttp;
 
 class Response {
     private $content;
+    private $headers;
+    private $cookies;
     private $info;
     private $error;
     private $json;
     private $dom;
     private $xpath;
 
-    public function __construct($content, $info = null, $error = null)
+    public function __construct($content, $info = null, $headers = null, $error = null)
     {
         $this->_setContent($content);
         $this->_setInfo($info);
+        $this->_setHeaders($headers);
         $this->_setError($error);
     }
 
@@ -29,6 +32,34 @@ class Response {
     private function _setError($error)
     {
         $this->error = $error;
+    }
+
+    private function _setHeaders($headers)
+    {
+        foreach (explode("\n", $headers) as $h) {
+            if (strpos($h, ":")) {
+                list($name, $val) = explode(":", $h, 2);
+                if ($name == 'Set-Cookie') {
+                   foreach (explode(';', $val) as $cookies) {
+                       if (strpos($cookies, '=')) {
+                           list($cname, $cval) = explode("=", $cookies);
+                           $this->cookies[trim($cname)] = trim(urldecode($cval));
+                       }
+                   }
+                }
+            }
+        }
+        $this->headers = $headers;
+    }
+
+    public function getCookies($key)
+    {
+        return $this->cookies[$key];
+    }
+
+    public function headers()
+    {
+        return $this->headers;
     }
 
     public function dom($utf = 0, $libxml_errors = true)
