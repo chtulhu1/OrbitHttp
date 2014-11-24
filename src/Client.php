@@ -1,30 +1,22 @@
 <?php
 namespace OrbitHttp;
+use OrbitHttp\ConfigSet;
 
 class Client
 {
     private $cookies;
     private $configs;
-    private $default_options = array(
-        CURLOPT_AUTOREFERER => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HEADER => 1,
-        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 6.2; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0',
-        CURLOPT_CONNECTTIMEOUT => 12,
-        CURLOPT_TIMEOUT => 12,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTPHEADER => array()
-    );
-    private $one_time_config;
+    private $request_config;
     private $default_config;
     private $ch;
     private $response;
 
-    public function __construct()
+    public function __construct($config_set = ConfigSet::STANDART_REQUEST)
     {
-        $this->addConfig('default', new Config());
-        $this->one_time_config = new Config();
-        $this->setCurlOpt($this->default_options);
+        $this->addConfig('default', new Config(
+            ConfigSet::get($config_set)
+        ));
+        $this->request_config = new Config();
     }
 
     public function addConfig($name, Config $config)
@@ -52,23 +44,23 @@ class Client
         }
     }
 
-    public function response()
-    {
-        return $this->response instanceof Response ? $this->response : null;
-    }
-
     public function getCurlOpt($key)
     {
         return $this->default_config->get($key);
     }
 
-    public function setCookies($name, $path = null)
+    public function setCookieSession($name, $path = null)
     {
         if (!$this->cookies instanceof CookieSession) {
             $this->cookies = new CookieSession($name, $path);
         } else {
             $this->cookies->initSession($name, $path);
         }
+    }
+
+    public function getCookieSession()
+    {
+        return $this->cookies;
     }
 
     public function get($url)
@@ -80,8 +72,6 @@ class Client
     {
         return $this->_request($url, $post_data);
     }
-
-
 
     private function _request($url = null, $post_data = false)
     {
@@ -136,17 +126,17 @@ class Client
 
     private function _setCurlRequestOpt($opt, $val)
     {
-        $this->one_time_config->set($opt, $val);
+        $this->request_config->set($opt, $val);
     }
 
     private function _getCurlRequestOpts()
     {
-        return $this->one_time_config;
+        return $this->request_config;
     }
 
     private function _resetCurlRequestOpts()
     {
-        $this->one_time_config->clear();
+        $this->request_config->clear();
     }
 
     private function _initCurl($url)
