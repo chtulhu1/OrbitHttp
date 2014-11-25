@@ -77,7 +77,7 @@ class Response {
         if ($this->dom == null) {
             libxml_use_internal_errors($libxml_errors);
             $doc = new \DOMDocument;
-            if (!$doc->loadHTML(($utf ? '<meta http-equiv="content-type" content="text/html; charset=utf-8">' : '').$this->body())) {
+            if (!$doc->loadHTML(($utf ? '<meta http-equiv="content-type" content="text/html; charset=utf-8">' : '').$this->getBody())) {
                 throw new \Exception('cannot load dom');
             } else {
                 $this->dom = $doc;
