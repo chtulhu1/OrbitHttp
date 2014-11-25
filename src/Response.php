@@ -89,7 +89,7 @@ class Response {
     public function getXPath($utf = 0, $libxml_errors = true)
     {
         if (!$this->xpath) {
-            if ($doc = $this->dom($utf, $libxml_errors)) {
+            if ($doc = $this->getDOM($utf, $libxml_errors)) {
                 $this->xpath = new \DOMXpath($doc);
             }
         }
